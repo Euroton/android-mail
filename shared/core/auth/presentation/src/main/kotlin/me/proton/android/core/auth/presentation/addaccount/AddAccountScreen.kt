@@ -35,8 +35,15 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.AlertDialog
+import androidx.compose.material.OutlinedTextField
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ColorFilter
@@ -44,6 +51,7 @@ import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
@@ -64,6 +72,8 @@ public const val SMALL_SCREEN_HEIGHT: Int = 680
 @Composable
 public fun AddAccountScreenMail(
     modifier: Modifier = Modifier,
+    serverDomain: String? = null,
+    onServerChosen: ((String?) -> Unit)? = null,
     onSignUpClicked: () -> Unit = {},
     onSignInClicked: () -> Unit = {}
 ) {
@@ -72,6 +82,8 @@ public fun AddAccountScreenMail(
         appLogoWithName = CoreR.drawable.logo_mail_with_text,
         appLogoContentDescription = R.string.app_name_mail,
         appSubtitle = R.string.welcome_subtitle_mail,
+        serverDomain = serverDomain,
+        onServerChosen = onServerChosen,
         onSignUpClicked = onSignUpClicked,
         onSignInClicked = onSignInClicked,
         modifier = modifier
@@ -85,6 +97,8 @@ public fun AddAccountScreen(
     @StringRes appLogoContentDescription: Int,
     @StringRes appSubtitle: Int,
     modifier: Modifier = Modifier,
+    serverDomain: String? = null,
+    onServerChosen: ((String?) -> Unit)? = null,
     onSignUpClicked: () -> Unit = {},
     onSignInClicked: () -> Unit = {}
 ) {
@@ -140,6 +154,8 @@ public fun AddAccountScreen(
                 appLogoWithNamePainter = painterResource(appLogoWithName),
                 appNameContentDescription = stringResource(appLogoContentDescription),
                 subtitleText = stringResource(appSubtitle),
+                serverDomain = serverDomain,
+                onServerChosen = onServerChosen,
                 onSignUpClicked = onSignUpClicked,
                 onSignInClicked = onSignInClicked,
                 modifier = Modifier
@@ -179,6 +195,8 @@ private fun AddAccountScreenContent(
     appLogoWithNamePainter: Painter,
     appNameContentDescription: String,
     subtitleText: String,
+    serverDomain: String?,
+    onServerChosen: ((String?) -> Unit)?,
     onSignUpClicked: () -> Unit,
     onSignInClicked: () -> Unit,
     modifier: Modifier = Modifier
@@ -219,7 +237,85 @@ private fun AddAccountScreenContent(
         ) {
             Text(text = stringResource(R.string.welcome_sign_in))
         }
+
+        if (onServerChosen != null) {
+            ServerRow(serverDomain = serverDomain, onServerChosen = onServerChosen)
+        }
     }
+}
+
+@Composable
+private fun ServerRow(serverDomain: String?, onServerChosen: (String?) -> Unit) {
+    var isDialogShown by rememberSaveable { mutableStateOf(false) }
+
+    ProtonTextButton(
+        contained = false,
+        onClick = { isDialogShown = true },
+        modifier = Modifier.height(ProtonDimens.DefaultButtonMinHeight)
+    ) {
+        Text(text = stringResource(R.string.server_row, serverDomain ?: stringResource(R.string.server_default)))
+    }
+
+    if (isDialogShown) {
+        ServerDialog(
+            serverDomain = serverDomain,
+            onServerChosen = onServerChosen,
+            onDismiss = { isDialogShown = false }
+        )
+    }
+}
+
+@Composable
+private fun ServerDialog(
+    serverDomain: String?,
+    onServerChosen: (String?) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var input by rememberSaveable { mutableStateOf(serverDomain.orEmpty()) }
+    var isInvalid by rememberSaveable { mutableStateOf(false) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(text = stringResource(R.string.server_dialog_title)) },
+        text = {
+            Column {
+                Text(text = stringResource(R.string.server_dialog_message))
+                OutlinedTextField(
+                    value = input,
+                    onValueChange = {
+                        input = it
+                        isInvalid = false
+                    },
+                    singleLine = true,
+                    isError = isInvalid,
+                    label = { Text(text = stringResource(R.string.server_dialog_hint)) },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = ProtonDimens.DefaultSpacing)
+                )
+                if (isInvalid) {
+                    Text(
+                        text = stringResource(R.string.server_dialog_invalid),
+                        style = ProtonTypography.Default.defaultSmallWeak
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            ProtonTextButton(
+                onClick = {
+                    val domain = CustomServer.normalize(input)
+                    if (domain == null) isInvalid = true else onServerChosen(domain)
+                }
+            ) { Text(text = stringResource(R.string.server_dialog_save)) }
+        },
+        dismissButton = {
+            ProtonTextButton(onClick = { onServerChosen(null) }) {
+                Text(text = stringResource(R.string.server_dialog_use_default))
+            }
+        }
+    )
 }
 
 @Preview(name = "Light mode")

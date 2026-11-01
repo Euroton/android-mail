@@ -19,6 +19,7 @@
 package ch.protonmail.android.api
 
 import ch.protonmail.android.BuildConfig
+import ch.protonmail.android.mailcommon.domain.model.ApiEnvironment
 import ch.protonmail.android.mailsession.domain.model.RustApiConfig
 import ch.protonmail.android.useragent.BuildUserAgent
 import ch.protonmail.android.useragent.GetAppVersion
@@ -29,7 +30,8 @@ import javax.inject.Inject
 class MailRustApiConfig @Inject constructor(
     private val buildUserAgent: BuildUserAgent,
     private val getAppVersion: GetAppVersion,
-    private val baseApiUrl: HttpUrl
+    private val baseApiUrl: HttpUrl,
+    private val apiEnvironment: ApiEnvironment
 ) : RustApiConfig {
 
     override val isDebug: Boolean
@@ -45,7 +47,7 @@ class MailRustApiConfig @Inject constructor(
     override val proxy: String?
         get() = null
     override val envId: ApiEnvId
-        get() = baseApiUrl.host.toApiEnv()
+        get() = if (apiEnvironment.isCustom) ApiEnvId.Custom(apiEnvironment.baseUrl) else baseApiUrl.host.toApiEnv()
 
     private fun String.toApiEnv(): ApiEnvId {
         val apiEnvId = when {

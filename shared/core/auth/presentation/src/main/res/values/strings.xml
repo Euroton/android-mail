@@ -28,6 +28,14 @@
     <string name="welcome_subtitle_mail">Privacy. Security. Convenience. Encrypted email that gives you full control of your personal data.</string>
     <string name="welcome_sign_in">Sign in</string>
     <string name="welcome_sign_up">Create an account</string>
+    <string name="server_row">Server: %1$s</string>
+    <string name="server_default">default</string>
+    <string name="server_dialog_title">Server</string>
+    <string name="server_dialog_message">Enter the domain of your own server. The app connects to mail-api on that domain.</string>
+    <string name="server_dialog_hint">example.org</string>
+    <string name="server_dialog_invalid">Enter an https address or a domain name.</string>
+    <string name="server_dialog_save">Save</string>
+    <string name="server_dialog_use_default">Use default</string>
     <string name="welcome_proton_privacy_by_default">Proton - Privacy by default</string>
     <string name="auth_login">Sign in</string>
     <string name="auth_login_close">Close</string>

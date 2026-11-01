@@ -19,11 +19,12 @@
 package ch.protonmail.android.mailcommon.domain.model
 
 /**
- * The backend environment the app talks to, derived from the build flavor.
+ * The backend environment the app talks to, derived from the build flavor or the server chosen at sign-in.
  */
 data class ApiEnvironment(
     val host: String,
-    val apiPrefix: String
+    val apiPrefix: String,
+    val isCustom: Boolean = false
 ) {
 
     val apiHost: String = "$apiPrefix.$host"
