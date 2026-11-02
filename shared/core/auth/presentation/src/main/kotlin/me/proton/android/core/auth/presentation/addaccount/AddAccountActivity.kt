@@ -20,7 +20,11 @@ package me.proton.android.core.auth.presentation.addaccount
 import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import ch.protonmail.android.mailsession.domain.repository.UserSessionRepository
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.flow.map
 import me.proton.android.core.auth.presentation.AuthOrchestrator
 import me.proton.android.core.auth.presentation.onLoginResult
 import me.proton.android.core.auth.presentation.onSignUpResult
@@ -34,6 +38,9 @@ class AddAccountActivity : ProtonActivity() {
 
     @Inject
     lateinit var authOrchestrator: AuthOrchestrator
+
+    @Inject
+    lateinit var userSessionRepository: UserSessionRepository
 
     override fun onDestroy() {
         authOrchestrator.unregister()
@@ -51,8 +58,17 @@ class AddAccountActivity : ProtonActivity() {
         authOrchestrator.onSignUpResult { result -> if (result != null) onSuccess() }
 
         setContent {
+            // Existing accounts belong to the current server, so it can only change with none signed in.
+            val hasAccounts by userSessionRepository.observeAccounts()
+                .map { it.isNotEmpty() }
+                .collectAsState(initial = true)
+
             ProtonTheme {
                 AddAccountScreenMail(
+                    serverDomain = CustomServer.read(this),
+                    onServerChosen = if (hasAccounts) null else { domain, key ->
+                        CustomServer.saveAndRestart(this, domain, key)
+                    },
                     onSignInClicked = { authOrchestrator.startLoginWorkflow() },
                     onSignUpClicked = { authOrchestrator.startSignUpWorkflow() }
                 )
