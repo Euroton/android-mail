@@ -1,0 +1,32 @@
+--- a/proton-srp-0.8.2/src/pgp_modulus.rs	2006-07-24 01:21:28.000000000 +0000
++++ b/proton-srp/src/pgp_modulus.rs	2026-11-02 08:50:43.270139439 +0000
+@@ -51,6 +51,20 @@
+ #[cfg(feature = "pgpinternal")]
+ pub use rpgp_impl::*;
+ 
++/// Key that replaces the built-in server key when verifying a modulus.
++/// Set by apps that talk to a self-hosted server with its own signing key.
++static MODULUS_KEY_OVERRIDE: std::sync::RwLock<Option<String>> = std::sync::RwLock::new(None);
++
++/// Replace (or with `None` restore) the key every modulus signature is checked against.
++pub fn set_modulus_verification_key(armored_public_key: Option<String>) {
++    let mut key = MODULUS_KEY_OVERRIDE.write().unwrap_or_else(std::sync::PoisonError::into_inner);
++    *key = armored_public_key;
++}
++
++fn modulus_key_override() -> Option<String> {
++    MODULUS_KEY_OVERRIDE.read().unwrap_or_else(std::sync::PoisonError::into_inner).clone()
++}
++
+ #[cfg(feature = "pgpinternal")]
+ mod rpgp_impl {
+     use crate::{ModulusSignatureVerifier, ModulusVerifyError};
+@@ -66,6 +80,8 @@
+             modulus: &str,
+             server_key: &str,
+         ) -> Result<String, ModulusVerifyError> {
++            let override_key = crate::pgp_modulus::modulus_key_override();
++            let server_key = override_key.as_deref().unwrap_or(server_key);
+             let (public_key, _) = SignedPublicKey::from_string(server_key)
+                 .map_err(|err| ModulusVerifyError::KeyImport(err.to_string()))?;
+             let (modulus_message, _) = CleartextSignedMessage::from_string(modulus)

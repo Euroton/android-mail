@@ -1,0 +1,27 @@
+diff --git a/project/mail/rust/mail/mail-uniffi/Cargo.toml b/project/mail/rust/mail/mail-uniffi/Cargo.toml
+index ca9343b..0b7442c 100644
+--- a/project/mail/rust/mail/mail-uniffi/Cargo.toml
++++ b/project/mail/rust/mail/mail-uniffi/Cargo.toml
+@@ -10,6 +10,7 @@ license = "AGPL-3.0-only"
+ crate-type = ["lib", "cdylib", "staticlib"]
+ 
+ [dependencies]
++proton-srp = { version = "0.8.2", registry = "proton" }
+ anyhow = { workspace = true }
+ async-trait = { workspace = true }
+ chrono = { workspace = true }
+diff --git a/project/mail/rust/mail/mail-uniffi/src/lib.rs b/project/mail/rust/mail/mail-uniffi/src/lib.rs
+index da23252..338be19 100644
+--- a/project/mail/rust/mail/mail-uniffi/src/lib.rs
++++ b/project/mail/rust/mail/mail-uniffi/src/lib.rs
+@@ -351,3 +351,10 @@ impl From<PaginatorSearchOptions> for RealSearchOptions {
+ fn make_me_crash() {
+     panic!("I will crash");
+ }
++
++/// Check SRP modulus signatures against this armored key instead of the built-in one.
++/// Euroton: the app passes the key it pinned for the chosen self-hosted server.
++#[uniffi::export]
++fn set_srp_modulus_key(armored_public_key: Option<String>) {
++    proton_srp::set_modulus_verification_key(armored_public_key);
++}
